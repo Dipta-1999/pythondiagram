@@ -1,0 +1,236 @@
+from diagrams import Diagram, Edge, Cluster, Node
+from diagrams.aws.network import ELB
+from diagrams.custom import Custom
+from diagrams.c4 import Person, Container, Database, System, SystemBoundary, Relationship
+from diagrams.generic.compute import Rack
+#from diagrams.aws.compute import SAR
+
+graph_attr = {
+#    "splines": "spline",
+    "splines": "ortho",
+    "fontsize": "13",
+}
+
+with Diagram("RedHat Openshift Architecture", direction="LR", graph_attr=graph_attr, show=False) as diag:
+    #bastion
+    Bastion = System(
+            name="Bastion",
+            description="Bastion node used to deploy and manage RHOCP",
+        )
+
+    #Quay.io RedHat repository
+    with Cluster("Internet", ):
+        redhat_cdn = Container(
+            name="RedHat CDN", technology="Quay.io, registry.redhat.io", description="Container images for Openshift and Binaries"
+        )
+        
+        
+     
+      
+    #Non-Prod Mirror       
+    with Cluster("Non_Prod Mirror"):
+          mr_np_01 = Container(
+                  name="Mirror Registry 01",
+                  technology="RedHat Quay Mirror Registry",
+                  description="Hosts container images for Openshift and Operators",
+                  bgcolor="yellow",
+                  color="brown"
+              )
+      
+          mr_np_02 = Container(
+                  name="Mirror Registry 02",
+                  technology="RedHat Quay Mirror Registry",
+                  description="Hosts container images for Openshift and Operators",
+                  bgcolor="yellow",
+                  color="brown"
+            
+              )
+    #Non-Prod zone
+    with Cluster("Non Prod Hub and Workload"):
+          #Workload
+          with Cluster("Non-Prod Workload"):
+              np_w01 = Container(
+                    name="RHOCP CLuster",    
+                    technology="OCP, ODF & Teramark",
+                    description="Workload RHOCP cluster to host Dev/Test/UAT/SIT environments",
+                    bgcolor="pink",
+                    color="black"
+              )  
+          #Hub   
+          with Cluster("Non-Prod Hub"):
+            np_h01 = Container(
+              name="HUB OCP CLuster",
+              technology="Quay, ACM, ODF",
+              description="Hub CLuster in non-prod environment",
+              bgcolor="green",
+              color="black"
+            ) 
+     
+     
+    #Prod
+    with Cluster("Prod Zone"):
+      #Prod Mirror
+      with Cluster("Prod Mirror"):
+            mr_p_01 = Container(
+                    name="Mirror Registry 01",
+                    technology="RedHat Quay Mirror Registry",
+                    description="Hosts container images for Openshift and Operators",
+                    bgcolor="yellow",
+                    color="brown"
+                )
+      
+            mr_p_02 = Container(
+                    name="Mirror Registry 02",
+                    technology="RedHat Quay Mirror Registry",
+                    description="Hosts container images for Openshift and Operators",
+                    bgcolor="yellow",
+                    color="brown"
+              
+              )
+      #Workload
+      with Cluster("Workload zone"):
+            p_w01 = Container(
+                name="Prod RHOCP CLuster (Active)",    
+                technology="OCP, ODF & Teramark",
+                description="Workload RHOCP cluster to host Prod environments",
+                bgcolor="pink",
+                color="black"
+            ) 
+            d_w01 = Container(
+                name="DR RHOCP CLuster (Passive)",
+                technology="OCP, ODF & Teramark",
+                description="Workload RHOCP cluster to host DR environments",
+                bgcolor="pink",
+                color="black"
+            ) 
+                
+      #Hub   
+      with Cluster("Hub Zone"):
+                p_h01 = Container(
+                    name="Prod HUB OCP CLuster (Passive)",
+                    technology="Quay, ACM, ODF, Submariner",
+                    description="Hub CLuster in prod environment",
+                    bgcolor="green",
+                    color="black"
+                ) 
+                d_h01 = Container(
+                    name="DR HUB OCP CLuster (Active)",
+                    technology="OCP, ACM, ACS, Quay & ODF",
+                    description="Hub CLuster in DR environment",
+                )
+    
+    #External Components
+    with Cluster("External Components") as ec:
+    
+       nas = Container(
+         name="NAS",
+         description="NAS",
+         external=True
+       )
+       
+       n_nex = Container(
+         name="Non-Prod Nexus",
+         description="Non-Prod Nexus",
+         external=True
+       )
+       
+       p_nex = Container(
+         name="Prod Nexus",
+         description="Prod Nexus",
+         external=True
+       )
+       
+       ntp = Container(
+         name="NTP",
+         description="Network Time Protocol",
+         external=True
+       )
+       dns = Container(
+         name="DNS",
+         description="Domain Name Server",
+         external=True
+       )  
+       ad = Container(
+         name="AD",
+         description="VPBank AzureAD for authentication",
+         external=True
+       )
+       v_cym = Container(
+         name="Viettel CYM",
+         description="Push all logs from Openshift via syslog protocol",
+         external=True
+       ) 
+       
+    Bastion >> [(p_w01), (d_w01), (np_w01)]
+    active_path_01 = Node("Active Path", labelloc="c")
+    passive_path_01 = Node("Passive Path", labelloc="c")
+    
+    active_path_02 = Node("Active Path", labelloc="c")
+    passive_path_02 = Node("Passive Path", labelloc="c")
+    
+    app_img_rep = Node("Application\nImage\nReplication", labelloc="c")
+    
+            
+    redhat_cdn >> Relationship(color="black", style="solid") >> mr_p_01
+    redhat_cdn >> Relationship(color="black", style="solid") >> mr_p_02
+
+    redhat_cdn >> Relationship(color="black", style="solid") >> mr_np_01
+    redhat_cdn >> Relationship(color="black", style="solid") >> mr_np_02
+    
+    mr_np_01 - Relationship(fontcolor="violet", color="violet", style="solid") - active_path_01 >> Relationship(fontcolor="violet", color="violet", style="solid") >> np_w01
+    mr_np_01 - Relationship(fontcolor="black", color="black", style="solid") - passive_path_01 >> Relationship(fontcolor="black", color="black", style="solid") >> np_h01
+    
+
+    mr_np_02 - Relationship(fontcolor="violet", color="violet", style="solid") - active_path_01 >> Relationship(color="violet", style="solid") >> np_h01
+    mr_np_02 - Relationship(fontcolor="black", color="black", style="solid") - passive_path_01 >> Relationship(color="black", style="solid") >> np_w01
+
+
+
+
+    mr_p_01 - Relationship(fontcolor="violet", color="violet", style="solid") - active_path_02 >> Relationship(fontcolor="violet", color="violet", style="solid") >> p_h01
+    mr_p_01 - Relationship(fontcolor="violet", color="violet", style="solid") - active_path_02 >> Relationship(fontcolor="violet", color="violet", style="solid") >> p_w01
+    mr_p_01 - Relationship(fontcolor="black", color="black", style="solid") - passive_path_02 >> Relationship(fontcolor="black", color="black", style="solid") >> d_h01
+    
+
+    mr_p_02 - passive_path_02 >> Relationship(color="black", style="solid") >> p_h01
+    mr_p_02 - passive_path_02 >> Relationship(color="black", style="solid") >> p_w01
+
+
+
+
+    mr_p_02 - Relationship(fontcolor="violet", color="violet", style="solid") - active_path_02 >> Relationship(fontcolor="violet", color="violet", style="solid") >> d_h01
+    mr_p_02 - Relationship(fontcolor="violet", color="violet", style="solid") - active_path_02 >> Relationship(fontcolor="violet", color="violet", style="solid") >> d_w01
+
+    #mr_p_01 >> Relationship(color="darkgray", style="solid") >> d_h01
+    #mr_p_01 >> Relationship(color="darkgray", style="solid") >> d_w01
+
+    p_h01 >> p_nex
+    
+
+    for container in [p_w01, d_w01]:
+      for external_component in [nas, n_nex, p_nex, ntp, dns, ad, v_cym]:
+          container >> external_component
+
+
+    np_w01 >> [(nas), (n_nex), (p_nex), (ntp), (dns), (ad), (v_cym)]
+    np_h01 >> [(nas), (n_nex), (p_nex), (ntp), (dns), (ad), (v_cym)]
+    p_h01 >> [(nas), (n_nex), (p_nex), (ntp), (dns), (ad), (v_cym)]    
+    d_w01 >> ntp
+    [(d_w01)] >> Relationship(color="violet", style="solid" ) >> ntp
+    
+    p_nex >> Relationship(color="orange", style="solid" ) >> app_img_rep >> Relationship(color="orange", style="solid" ) >> [(p_h01), (d_h01)]
+    
+    n_nex >> Relationship(color="blue", style="solid") >> p_nex
+    
+    n_nex >> Relationship(color="orange", style="solid") >> np_h01
+    
+    #Bastion >> [(p_w01), (d_w01), (np_w01)]
+    #Bastion >>  [(np_h01), (np_w01), (p_h01), (p_w01), (d_h01), (d_w01), (mr_np_01), (mr_np_02), (mr_p_01), (mr_p_02)] 
+
+     
+     
+     
+     
+         
+     
+diag

@@ -1,0 +1,18 @@
+digraph Custom {
+	graph [fontcolor="#2D3436" fontname="Sans-Serif" fontsize=15 label=Custom nodesep=0.60 pad=2.0 rankdir=LR ranksep=0.75 splines=ortho]
+	node [fixedsize=true fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13 height=1.4 imagescale=true labelloc=b shape=box style=rounded width=1.4]
+	edge [color="#7B8894"]
+	be8ff546b73a4408ad518279d9021f9a [label="My
+Custom
+text #1
+
+
+HELLO"]
+	d08e9e598f9a45b58bfe0d59b834cd4d [label="My 2nd
+Custom
+string
+
+
+WORLD!"]
+	be8ff546b73a4408ad518279d9021f9a -> d08e9e598f9a45b58bfe0d59b834cd4d [label="WEEE!!!" dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+}
